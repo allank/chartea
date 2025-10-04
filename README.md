@@ -85,7 +85,7 @@ You can customize the appearance and behavior of the `clob` component by setting
 
 ### Orientation
 
-You can choose how the order book is displayed by setting the `Orientation` on the `clob.Model` to either `Horizontal` ro `Vertical`.
+You can choose how the order book is displayed by setting the `Orientation` on the `clob.Model` to either `Horizontal` or `Vertical`.
 
 When `Horizontal` (default), the bids and asks will be displayed side by side, bids on the left and asks on the right.  Best bid and best ask will be at the top.
 
