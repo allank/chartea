@@ -254,6 +254,18 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "ctrl+c", "q":
 			return m, tea.Quit
+		case "v":
+			if m.clob.Orientation == clob.Vertical {
+				m.clob.Orientation = clob.Horizontal
+			} else {
+				m.clob.Orientation = clob.Vertical
+			}
+		case "a":
+			if m.clob.Alignment == clob.AlignLeft {
+				m.clob.Alignment = clob.AlignRight
+			} else {
+				m.clob.Alignment = clob.AlignLeft
+			}
 		}
 	}
 
