@@ -127,7 +127,8 @@ func (m *Model) ViewWithOptions(opts ViewOptions) string {
 		m.sortAsks(true)
 
 		// Truncate the bids and asks if a height is specified.
-		bids, asks := m.truncateOrders(opts.Height / 2)
+		// Account for the spread when using Vertical orientation
+		bids, asks := m.truncateOrders((opts.Height - 1) / 2)
 
 		// Find the maximum volume in the order book to scale the bars correctly.
 		maxVolume := m.calculateMaxVolume(bids, asks)
@@ -138,6 +139,7 @@ func (m *Model) ViewWithOptions(opts ViewOptions) string {
 		bidView := m.renderVerticalBids(bids, opts.Width, maxVolume)
 
 		bookPanel := lipgloss.JoinVertical(lipgloss.Left, askView, spreadView, bidView)
+		// bookPanel := lipgloss.JoinVertical(lipgloss.Left, askView)
 
 		// Place the book panel in the center of the available space.
 		return lipgloss.Place(
@@ -190,9 +192,13 @@ func (m *Model) renderSpread(width int) string {
 	bestAsk := m.Asks[len(m.Asks)-1].Price
 	bestBid := m.Bids[0].Price
 	spread := bestAsk - bestBid
-	priceFormat := fmt.Sprintf("%%.%df", m.PricePrecision)
+	priceFormat := fmt.Sprintf("Spread: %%.%df", m.PricePrecision)
 	spreadString := fmt.Sprintf(priceFormat, spread)
-	return lipgloss.NewStyle().Width(width).Align(lipgloss.Center).Render(m.StyleOffBar.Render(spreadString))
+	align := lipgloss.Left
+	if m.Alignment == AlignLeft {
+		align = lipgloss.Right
+	}
+	return lipgloss.NewStyle().Width(width).Align(align).Render(m.StyleOffBar.Render(spreadString))
 }
 
 // renderVerticalBids renders the bid side of the order book for vertical orientation.
@@ -266,8 +272,8 @@ func (m *Model) renderVerticalAsks(orders []Order, width int, maxVolume float64)
 			offStr := m.StyleOffBar.Width(offLen).Render(output[onLen:])
 			bar = lipgloss.JoinHorizontal(lipgloss.Left, onStr, offStr)
 		} else {
-			offStr := m.StyleOffBar.Width(offLen).Render(output[:offLen])
-			onStr := m.StyleOnAsk.Width(onLen).Render(output[onLen:])
+			offStr := m.StyleOffBar.Render(output[:offLen])
+			onStr := m.StyleOnAsk.Render(output[offLen:])
 			bar = lipgloss.JoinHorizontal(lipgloss.Right, offStr, onStr)
 		}
 		rows = append(rows, bar)

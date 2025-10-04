@@ -260,6 +260,12 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 				m.clob.Orientation = clob.Vertical
 			}
+		case "a":
+			if m.clob.Alignment == clob.AlignLeft {
+				m.clob.Alignment = clob.AlignRight
+			} else {
+				m.clob.Alignment = clob.AlignLeft
+			}
 		}
 	}
 
