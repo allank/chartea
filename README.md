@@ -1,4 +1,4 @@
-# CLOB Bubble Tea Component
+# Chartea CLOB Bubble Tea Component
 
 A simple, reusable central limit order book (CLOB) component for [Bubble Tea](https://github.com/charmbracelet/bubbletea) applications.
 
@@ -6,7 +6,9 @@ A simple, reusable central limit order book (CLOB) component for [Bubble Tea](ht
 
 ## Installation
 
-Since this is a local component, you can just copy the `clob` directory into your project.
+```bash
+go get github.com/allank/chartea
+```
 
 ## Usage
 
@@ -19,7 +21,7 @@ import (
 	"log"
 	"os"
 
-	"your/module/path/clob"
+	"github.com/allank/chartea/clob"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -53,6 +55,9 @@ func InitialModel() mainModel {
 
 // ... (rest of your Bubble Tea application)
 ```
+## The order book
+
+The `clob.Model` requires an `OrderBook`.  An `OrderBook` has two fields, `Bids` and `Asks`, each of which is a slice of `Order`.  Each `Order` has a `Price` and a `Volume`.  The `Bids` and `Asks` do not need to be sorted, this is done internally before displaying.
 
 ## Customization
 
@@ -68,9 +73,16 @@ func (m mainModel) View() string {
 }
 ```
 
+The side by side bids and asks will be displayed within the contraints of the provided with (or full terminal width if not provided), and the number (depth) of orders will be limited to the provided height.
+
 ### Styling
 
 You can override the default colors by setting the `StyleOnBid`, `StyleOnAsk`, and `StyleOffBar` fields on the `clob.Model`.
+
+- `StyleOnBid` is used to show the bar representing the bid volume, and any text displayed within the bar.  Defaults to light grey text on a green background.
+- `StyleOnAsk` is used to show the bar representing the ask volume, and any text displayed within the bar.  Defaults to light grey text on a red background.
+- `StyleOffBar` is used to show the area not covered by the volume bar, and any text.  Defaults to an `AdaptiveColor` using light grey and dark grey.
+
 
 ```go
 func InitialModel() mainModel {

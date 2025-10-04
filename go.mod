@@ -1,4 +1,4 @@
-module play
+module github.com/allank/chartea
 
 go 1.25.0
 

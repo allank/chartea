@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	"play/clob"
+	"github.com/allank/chartea/clob"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
