@@ -1,4 +1,4 @@
-# Chartea CLOB Bubble Tea Component
+# Chartea - An order book component for Bubble Tea
 
 A simple, reusable central limit order book (CLOB) component for [Bubble Tea](https://github.com/charmbracelet/bubbletea) applications.
 
