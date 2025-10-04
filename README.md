@@ -2,8 +2,9 @@
 
 A simple, reusable central limit order book (CLOB) component for [Bubble Tea](https://github.com/charmbracelet/bubbletea) applications.
 
+![Horizontal Example](example.png)
 
-![Example](example.png)
+![Vertical Example](example2.png)
 
 _Data from [https://api.luno.com/api/1/orderbook_top?pair=BTCZAR](https://api.luno.com/api/1/orderbook_top?pair=BTCZAR) at 2025-10-04 08:00 SAST_
 ## Installation
@@ -64,6 +65,16 @@ The `clob.Model` requires an `OrderBook`.  An `OrderBook` has two fields, `Bids`
 ## Customization
 
 You can customize the appearance and behavior of the `clob` component by setting the fields on the `clob.Model`.
+
+### Orientation
+
+You can choose how the order book is displayed by setting the `Orientation` on the `clob.Model` to either `Horizontal` ro `Vertical`.
+
+When `Horizontal` (default), the bids and asks will be displayed side by side, bids on the left and asks on the right.  Best bid and best ask will be at the top.
+
+When `Vertical`, the bids and asks will be displayed stacked, asks on the top, bids on the bottom.  Best ask will be at the bottom of the asks and best bid will be at the top of the bids.  When using `Vertical` orientation, the spread between best bid and best ask is also shown.
+
+The `Vertical` orientation also supports an `Alignment`.  When this is set to `AlignLeft` (default), the volume and coloured volume bar are shown on the left, with price on the right.  When this is set to `AlignRight`, the volume and coloured volume bar are shown on the right, with price on the left.
 
 ### Dimensions
 
