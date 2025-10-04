@@ -226,7 +226,8 @@ func InitialModel() mainModel {
 		{Price: 1987802.000000000000000000, Volume: 0.032214000000000000},
 		{Price: 1987322.000000000000000000, Volume: 0.037710000000000000},
 	}
-
+	// Set VolumePrecision
+	m.clob.VolumePrecision = 8
 	// Override default styles
 	m.clob.StyleOnBid = lipgloss.NewStyle().
 		Foreground(lipgloss.Color("228")).
