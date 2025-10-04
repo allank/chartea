@@ -101,9 +101,8 @@ func (m *Model) ViewWithOptions(opts ViewOptions) string {
 	// Calculate the width of each column.
 	columnWidth := (opts.Width - m.Spacing) / 2
 
-	// Find the maximum volume in the order book to scale the bars correctly.
-	maxVolume := m.calculateMaxVolume()
-
+	  // Find the maximum volume in the order book to scale the bars correctly.
+		maxVolume := m.calculateMaxVolume(bids, asks)
 	// Render the bid and ask sides of the book.
 	bidView := m.renderBids(bids, columnWidth, maxVolume)
 	askView := m.renderAsks(asks, columnWidth, maxVolume)
@@ -153,15 +152,15 @@ func (m *Model) truncateOrders(height int) ([]Order, []Order) {
 	return bids, asks
 }
 
-// calculateMaxVolume finds the maximum volume in the order book.
-func (m *Model) calculateMaxVolume() float64 {
+// calculateMaxVolume finds the maximum volume in the given orders.
+func (m *Model) calculateMaxVolume(bids, asks []Order) float64 {
 	maxVolume := 0.0
-	for _, o := range m.Asks {
+	for _, o := range asks {
 		if o.Volume > maxVolume {
 			maxVolume = o.Volume
 		}
 	}
-	for _, o := range m.Bids {
+	for _, o := range bids {
 		if o.Volume > maxVolume {
 			maxVolume = o.Volume
 		}
