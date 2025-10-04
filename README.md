@@ -56,7 +56,24 @@ func InitialModel() mainModel {
 	return m
 }
 
-// ... (rest of your Bubble Tea application)
+func main() {
+	p := tea.NewProgram(InitialModel(), tea.WithAltScreen())
+
+	if _, err := p.Run(); err != nil {
+		log.Fatalf("Alas, there's been an error: %v", err)
+		os.Exit(1)
+	}
+}
+```
+
+## Example
+
+The included example in the `_examples` folder can be run with `go run ./_examples/main.go`.
+
+The example allows you to toggle between `Horizontal` and `Vertical` orientation by pressing the `v` key.
+
+When in `Vertical` orientation, you can toggle between `AlignLeft` and `AlignRight` by pressing the `a` key.
+
 ```
 ## The order book
 
@@ -167,6 +184,8 @@ Renders the CLOB with the given options.
 ### `clob.Model`
 
 *   `OrderBook`: The data for the order book.
+*   `Orientation`: The orientation of the order book (`Horizontal` or `Vertical`).
+*   `Alignment`: The alignment of the volume and price in `Vertical` orientation (`AlignLeft` or `AlignRight`).
 *   `Spacing`: The space between the bid and ask columns.
 *   `PricePrecision`: The number of decimal places for the price.
 *   `VolumePrecision`: The number of decimal places for the volume.
