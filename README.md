@@ -74,7 +74,7 @@ The example allows you to toggle between `Horizontal` and `Vertical` orientation
 
 When in `Vertical` orientation, you can toggle between `AlignLeft` and `AlignRight` by pressing the `a` key.
 
-```
+
 ## The order book
 
 The `clob.Model` requires an `OrderBook`.  An `OrderBook` has two fields, `Bids` and `Asks`, each of which is a slice of `Order`.  Each `Order` has a `Price` and a `Volume`.  The `Bids` and `Asks` do not need to be sorted, this is done internally before displaying.
