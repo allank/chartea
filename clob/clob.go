@@ -26,6 +26,10 @@ type Model struct {
 	// Spacing is the space between the bid and ask columns.
 	Spacing int
 
+	// Precision for price and volume.
+	PricePrecision  int
+	VolumePrecision int
+
 	// Styles
 	StyleOffBar lipgloss.Style
 	StyleOnBid  lipgloss.Style
@@ -47,7 +51,9 @@ type Order struct {
 // New creates a new CLOB model with default styles.
 func New() Model {
 	return Model{
-		Spacing: 1,
+		Spacing:         1,
+		PricePrecision:  2,
+		VolumePrecision: 2,
 		StyleOffBar: lipgloss.NewStyle().
 			Foreground(lipgloss.AdaptiveColor{Light: "232", Dark: "188"}),
 		StyleOnBid: lipgloss.NewStyle().
@@ -166,9 +172,12 @@ func (m *Model) calculateMaxVolume() float64 {
 // renderBids renders the bid side of the order book.
 func (m *Model) renderBids(orders []Order, width int, maxVolume float64) string {
 	rows := []string{}
+	priceFormat := fmt.Sprintf("%%.%df", m.PricePrecision)
+	volumeFormat := fmt.Sprintf("%%.%df", m.VolumePrecision)
+
 	for _, o := range orders {
-		priceString := fmt.Sprintf("%.2f", o.Price)
-		volumeString := fmt.Sprintf("%.2f", o.Volume)
+		priceString := fmt.Sprintf(priceFormat, o.Price)
+		volumeString := fmt.Sprintf(volumeFormat, o.Volume)
 
 		padding := width - len(priceString) - len(volumeString)
 		if padding < 0 {
@@ -191,9 +200,12 @@ func (m *Model) renderBids(orders []Order, width int, maxVolume float64) string 
 // renderAsks renders the ask side of the order book.
 func (m *Model) renderAsks(orders []Order, width int, maxVolume float64) string {
 	rows := []string{}
+	priceFormat := fmt.Sprintf("%%.%df", m.PricePrecision)
+	volumeFormat := fmt.Sprintf("%%.%df", m.VolumePrecision)
+
 	for _, o := range orders {
-		priceString := fmt.Sprintf("%.2f", o.Price)
-		volumeString := fmt.Sprintf("%.2f", o.Volume)
+		priceString := fmt.Sprintf(priceFormat, o.Price)
+		volumeString := fmt.Sprintf(volumeFormat, o.Volume)
 
 		padding := width - len(priceString) - len(volumeString)
 		if padding < 0 {

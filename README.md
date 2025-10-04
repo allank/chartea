@@ -122,6 +122,25 @@ func InitialModel() mainModel {
 }
 ```
 
+### Precision
+
+You can set the precision of the price and volume by setting the `PricePrecision` and `VolumePrecision` fields on the `clob.Model`.
+
+```go
+func InitialModel() mainModel {
+	m := mainModel{
+		clob: clob.New(),
+	}
+
+	m.clob.PricePrecision = 4
+	m.clob.VolumePrecision = 0
+
+	// ... (rest of your model initialization)
+
+	return m
+}
+```
+
 ## API Reference
 
 ### `clob.New()`
@@ -136,6 +155,8 @@ Renders the CLOB with the given options.
 
 *   `OrderBook`: The data for the order book.
 *   `Spacing`: The space between the bid and ask columns.
+*   `PricePrecision`: The number of decimal places for the price.
+*   `VolumePrecision`: The number of decimal places for the volume.
 *   `StyleOffBar`: The style for the "off" part of the volume bar.
 *   `StyleOnBid`: The style for the bid volume bar.
 *   `StyleOnAsk`: The style for the ask volume bar.
