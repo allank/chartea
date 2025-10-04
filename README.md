@@ -2,8 +2,10 @@
 
 A simple, reusable central limit order book (CLOB) component for [Bubble Tea](https://github.com/charmbracelet/bubbletea) applications.
 
-![CLOB Component](https://raw.githubusercontent.com/charmbracelet/bubbletea/master/examples/clob/clob.gif)
 
+![Example](example.png)
+
+_Data from [https://api.luno.com/api/1/orderbook_top?pair=BTCZAR](https://api.luno.com/api/1/orderbook_top?pair=BTCZAR) at 2025-10-04 08:00 SAST_
 ## Installation
 
 ```bash
