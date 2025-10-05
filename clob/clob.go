@@ -111,12 +111,15 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 
 // View renders the CLOB, taking up the full width and height of the model.
 func (m *Model) View() string {
+	if m.width <= 0 {
+		return "Initializing..."
+	}
 	return m.ViewWithOptions(ViewOptions{Width: m.width, Height: m.height})
 }
 
 // ViewWithOptions renders the CLOB with the given options.
 func (m *Model) ViewWithOptions(opts ViewOptions) string {
-	if opts.Width == 0 {
+	if opts.Width <= 0 {
 		return "Initializing..."
 	}
 

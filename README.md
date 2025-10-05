@@ -70,10 +70,11 @@ func main() {
 
 The included example in the `_examples` folder can be run with `go run ./_examples/main.go`.
 
-The example allows you to toggle between `Horizontal` and `Vertical` orientation by pressing the `v` key.
+The example (still WIP) splits the screen and displays a sample order book using horizontal orientation on the left and vertical on the right. You can toggle the vertical alignment by pressing the `a` key.
 
-When in `Vertical` orientation, you can toggle between `AlignLeft` and `AlignRight` by pressing the `a` key.
+> The example is in the process of being expanded to show live data from a public API and WebSocket.
 
+![Example app](_examples.png)
 
 ## The order book
 
