@@ -186,6 +186,7 @@ func getRestOrderBook(pair string, isTokenized bool) (*OrderBook, error) {
 
 func init() {
 }
+
 type refetchMsg struct{}
 
 // mainModel represents the state of our TUI application.
@@ -363,8 +364,21 @@ func (m mainModel) View() string {
 	statusAlignVal := StatusBarContentStyle.Render(" toggle vertical alignment")
 	statusQuitKey := StatusBarInfoStyle.Render(" q:")
 	statusQuitVal := StatusBarContentStyle.Render(" quit")
-	statusBar := lipgloss.JoinHorizontal(lipgloss.Center, statusRefreshKey, statusRefreshVal, "  ", statusAlignKey, statusAlignVal, "  ", statusQuitKey, statusQuitVal)
-
+	statusMarket := ""
+	if market != "" {
+		marketType := "(Crypto)"
+		if isTokenizedCache {
+			marketType = "(Tokenized Equity)"
+		}
+		statusMarket = lipgloss.JoinHorizontal(
+			lipgloss.Center,
+			StatusBarInfoStyle.Render(market),
+			" ",
+			marketType,
+			"  | ",
+		)
+	}
+	statusBar := lipgloss.JoinHorizontal(lipgloss.Center, statusMarket, statusRefreshKey, statusRefreshVal, "  ", statusAlignKey, statusAlignVal, "  ", statusQuitKey, statusQuitVal)
 	mainLayout := lipgloss.JoinVertical(
 		lipgloss.Left,
 		panels,
