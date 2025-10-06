@@ -70,9 +70,11 @@ func main() {
 
 The included example in the `_examples` folder can be run with `go run ./_examples/main.go`.
 
+It takes a single optional argument `--market`.  If this is not provided, then mock data is used to display the order book.  If it is provided, then the order book for the provided market is fetched from the [Kraken API](https://docs.kraken.com). 
+
 The example (still WIP) splits the screen and displays a sample order book using horizontal orientation on the left and vertical on the right. You can toggle the vertical alignment by pressing the `a` key.
 
-> The example is in the process of being expanded to show live data from a public API and WebSocket.
+> The example is in the process of being expanded to show live data.  The REST order book (and refreshing) is implemented, the WebSocket order book is still in progress.
 
 ![Example app](_examples.png)
 
