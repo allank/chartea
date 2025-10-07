@@ -206,7 +206,7 @@ func (m *Model) renderSpread(width int) string {
 
 // renderVerticalBids renders the bid side of the order book for vertical orientation.
 func (m *Model) renderVerticalBids(orders []Order, width int, maxVolume float64) string {
-	rows := []string{}
+	rows := make([]string, 0, len(orders))
 	priceFormat := fmt.Sprintf("%%.%df", m.PricePrecision)
 	volumeFormat := fmt.Sprintf("%%.%df", m.VolumePrecision)
 
@@ -246,7 +246,7 @@ func (m *Model) renderVerticalBids(orders []Order, width int, maxVolume float64)
 
 // renderVerticalAsks renders the ask side of the order book for vertical orientation.
 func (m *Model) renderVerticalAsks(orders []Order, width int, maxVolume float64) string {
-	rows := []string{}
+	rows := make([]string, 0, len(orders))
 	priceFormat := fmt.Sprintf("%%.%df", m.PricePrecision)
 	volumeFormat := fmt.Sprintf("%%.%df", m.VolumePrecision)
 
@@ -347,7 +347,7 @@ func (m *Model) calculateMaxVolume(bids, asks []Order) float64 {
 
 // renderBids renders the bid side of the order book.
 func (m *Model) renderBids(orders []Order, width int, maxVolume float64) string {
-	rows := []string{}
+	rows := make([]string, 0, len(orders))
 	priceFormat := fmt.Sprintf("%%.%df", m.PricePrecision)
 	volumeFormat := fmt.Sprintf("%%.%df", m.VolumePrecision)
 
@@ -375,7 +375,7 @@ func (m *Model) renderBids(orders []Order, width int, maxVolume float64) string 
 
 // renderAsks renders the ask side of the order book.
 func (m *Model) renderAsks(orders []Order, width int, maxVolume float64) string {
-	rows := []string{}
+	rows := make([]string, 0, len(orders))
 	priceFormat := fmt.Sprintf("%%.%df", m.PricePrecision)
 	volumeFormat := fmt.Sprintf("%%.%df", m.VolumePrecision)
 
