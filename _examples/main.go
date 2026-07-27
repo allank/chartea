@@ -9,16 +9,29 @@ import (
 
 	"github.com/allank/chartea/clob"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 )
 
-var market string
+var (
+	market   string
+	realtime bool
+)
 
 var (
 	orderBookCache   *OrderBook
 	isTokenizedCache bool
 )
+
+func getModeLabel(market string, realtime bool) string {
+	if realtime {
+		return "[Realtime Mode]"
+	}
+	if market != "" {
+		return "[Static Mode]"
+	}
+	return "[Mock Mode]"
+}
 
 func init() {
 }
@@ -104,7 +117,7 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
 			return m, tea.Quit
@@ -147,7 +160,8 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 // View renders the UI based on the current model state.
-func (m mainModel) View() string {
+func (m mainModel) View() tea.View {
+	v := tea.NewView("")
 	// Panel
 	panelStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
@@ -200,6 +214,7 @@ func (m mainModel) View() string {
 	statusQuitKey := StatusBarInfoStyle.Render(" q:")
 	statusQuitVal := StatusBarContentStyle.Render(" quit")
 	statusMarket := ""
+	modeLabel := getModeLabel(market, realtime)
 	if market != "" {
 		marketType := "(Crypto)"
 		if isTokenizedCache {
@@ -210,6 +225,14 @@ func (m mainModel) View() string {
 			StatusBarInfoStyle.Render(market),
 			" ",
 			marketType,
+			" ",
+			modeLabel,
+			"  | ",
+		)
+	} else {
+		statusMarket = lipgloss.JoinHorizontal(
+			lipgloss.Center,
+			StatusBarInfoStyle.Render(modeLabel),
 			"  | ",
 		)
 	}
@@ -219,13 +242,16 @@ func (m mainModel) View() string {
 		panels,
 		statusBar,
 	)
-	return mainLayout
+	v.SetContent(mainLayout)
+	return v
 }
 
 func main() {
-	flag.StringVar(&market, "market", "", "the market pair to fetch")
+	flag.StringVar(&market, "market", "", "the market pair to fetch (e.g. BTC/USD)")
+	flag.BoolVar(&realtime, "realtime", false, "enable realtime websocket order book updates")
 	flag.Parse()
-	p := tea.NewProgram(InitialModel(), tea.WithAltScreen())
+
+	p := tea.NewProgram(InitialModel())
 
 	if _, err := p.Run(); err != nil {
 		log.Fatalf("Alas, there's been an error: %v", err)
