@@ -5,6 +5,7 @@ import (
 	"log"
 	"math"
 	"os"
+	"sort"
 	"strconv"
 
 	"github.com/allank/chartea/clob"
@@ -152,11 +153,56 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 		return m, nil
+	case wsOrderBookMsg:
+		if msg.IsSnapshot {
+			m.wclob.Asks = msg.Asks
+			m.wclob.Bids = msg.Bids
+			m.rclob.Asks = msg.Asks
+			m.rclob.Bids = msg.Bids
+			sort.Slice(m.wclob.Asks, func(i, j int) bool { return m.wclob.Asks[i].Price < m.wclob.Asks[j].Price })
+			sort.Slice(m.wclob.Bids, func(i, j int) bool { return m.wclob.Bids[i].Price > m.wclob.Bids[j].Price })
+			sort.Slice(m.rclob.Asks, func(i, j int) bool { return m.rclob.Asks[i].Price < m.rclob.Asks[j].Price })
+			sort.Slice(m.rclob.Bids, func(i, j int) bool { return m.rclob.Bids[i].Price > m.rclob.Bids[j].Price })
+		} else {
+			mergeOrderBook(&m.wclob.Asks, msg.Asks, false)
+			mergeOrderBook(&m.wclob.Bids, msg.Bids, true)
+			mergeOrderBook(&m.rclob.Asks, msg.Asks, false)
+			mergeOrderBook(&m.rclob.Bids, msg.Bids, true)
+		}
+		return m, nil
 	}
 
 	var cmd tea.Cmd
 	m.rclob, cmd = m.rclob.Update(msg)
+	m.wclob, _ = m.wclob.Update(msg)
 	return m, cmd
+}
+
+// mergeOrderBook applies L2 order book updates which can replace or remove entries.
+func mergeOrderBook(book *[]clob.Order, updates []clob.Order, desc bool) {
+	for _, update := range updates {
+		found := false
+		for i, existing := range *book {
+			if existing.Price == update.Price {
+				if update.Volume == 0 {
+					*book = append((*book)[:i], (*book)[i+1:]...)
+				} else {
+					(*book)[i].Volume = update.Volume
+				}
+				found = true
+				break
+			}
+		}
+		if !found && update.Volume > 0 {
+			*book = append(*book, update)
+		}
+	}
+	sort.Slice(*book, func(i, j int) bool {
+		if desc {
+			return (*book)[i].Price > (*book)[j].Price
+		}
+		return (*book)[i].Price < (*book)[j].Price
+	})
 }
 
 // View renders the UI based on the current model state.
@@ -178,7 +224,7 @@ func (m mainModel) View() tea.View {
 	availWWidth := wsPanelWidth - (panelStyle.GetHorizontalFrameSize() * 2)
 	availHeight := panelHeight - panelStyle.GetVerticalFrameSize()
 
-	// REST Panel
+	// Static Panel
 	var restPanelContent string
 	if m.loading {
 		restPanelContent = "Loading..."
@@ -208,7 +254,7 @@ func (m mainModel) View() tea.View {
 		Foreground(lipgloss.Color("255"))
 
 	statusRefreshKey := StatusBarInfoStyle.Render("r:")
-	statusRefreshVal := StatusBarContentStyle.Render(" refresh REST order book")
+	statusRefreshVal := StatusBarContentStyle.Render(" refresh static order book")
 	statusAlignKey := StatusBarInfoStyle.Render("a:")
 	statusAlignVal := StatusBarContentStyle.Render(" toggle vertical alignment")
 	statusQuitKey := StatusBarInfoStyle.Render(" q:")
@@ -248,10 +294,18 @@ func (m mainModel) View() tea.View {
 
 func main() {
 	flag.StringVar(&market, "market", "", "the market pair to fetch (e.g. BTC/USD)")
-	flag.BoolVar(&realtime, "realtime", false, "enable realtime websocket order book updates")
+	flag.BoolVar(&realtime, "realtime", false, "enable realtime order book updates")
 	flag.Parse()
 
 	p := tea.NewProgram(InitialModel())
+
+	if realtime {
+		targetMarket := market
+		if targetMarket == "" {
+			targetMarket = "BTC/USD"
+		}
+		go connectWebSocket(p, targetMarket)
+	}
 
 	if _, err := p.Run(); err != nil {
 		log.Fatalf("Alas, there's been an error: %v", err)
