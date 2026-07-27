@@ -68,13 +68,30 @@ func main() {
 
 ## Example
 
-The included example in the `_examples` folder can be run with `go run ./_examples/main.go`.
+The included example in the `_examples` directory demonstrates mock data, static REST snapshots, and live WebSocket streaming order book updates using the [Kraken API](https://docs.kraken.com).
 
-It takes a single optional argument `--market`.  If this is not provided, then mock data is used to display the order book.  If it is provided, then the order book for the provided market is fetched from the [Kraken API](https://docs.kraken.com). 
+### Running the Example
 
-The example (still WIP) splits the screen and displays a sample order book using horizontal orientation on the left and vertical on the right. You can toggle the vertical alignment by pressing the `a` key.
+- **Realtime Mode (Live WebSocket Streaming)**:
+  ```bash
+  go run -C _examples . -market BTC/USD -realtime
+  ```
+- **Static Mode (One-off REST Snapshot)**:
+  ```bash
+  go run -C _examples . -market BTC/USD
+  ```
+- **Mock Mode (Offline Testing)**:
+  ```bash
+  go run -C _examples .
+  ```
 
-> The example is in the process of being expanded to show live data.  The REST order book (and refreshing) is implemented, the WebSocket order book is still in progress.
+### TUI Features & Keybindings
+
+The example displays side-by-side order book views using horizontal orientation on the left and vertical on the right:
+- Press **`v`** to toggle orientation (Horizontal vs Vertical).
+- Press **`a`** to toggle vertical volume bar alignment (Left vs Right).
+- Press **`r`** to refresh static order book data.
+- Press **`q`** or **`Ctrl+C`** to quit.
 
 ![Example app](_examples.png)
 
