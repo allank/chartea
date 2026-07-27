@@ -1,10 +1,14 @@
-module github.com/allank/chartea
+module github.com/allank/chartea/_examples
 
 go 1.25.0
+
+replace github.com/allank/chartea => ../
 
 require (
 	charm.land/bubbletea/v2 v2.0.0
 	charm.land/lipgloss/v2 v2.0.0
+	github.com/allank/chartea v0.0.0-00010101000000-000000000000
+	github.com/gorilla/websocket v1.5.3
 )
 
 require (

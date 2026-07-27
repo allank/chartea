@@ -5,8 +5,9 @@ import (
 	"sort"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
+	"charm.land/lipgloss/v2/compat"
 )
 
 // Orientation defines the orientation of the order book.
@@ -84,7 +85,7 @@ func New() Model {
 		PricePrecision:  2,
 		VolumePrecision: 2,
 		StyleOffBar: lipgloss.NewStyle().
-			Foreground(lipgloss.AdaptiveColor{Light: "232", Dark: "188"}),
+			Foreground(compat.AdaptiveColor{Light: lipgloss.Color("232"), Dark: lipgloss.Color("188")}),
 		StyleOnBid: lipgloss.NewStyle().
 			Foreground(lipgloss.Color("188")).
 			Background(lipgloss.Color("34")),
