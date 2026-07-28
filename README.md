@@ -26,8 +26,7 @@ import (
 
 	"github.com/allank/chartea/clob"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
 )
 
 // mainModel represents the state of our TUI application.
@@ -58,8 +57,36 @@ func InitialModel() mainModel {
 	return m
 }
 
+// Init is the first command that is run when the program starts.
+func (m mainModel) Init() tea.Cmd {
+	return nil
+}
+
+// Update handles all incoming messages and updates the model accordingly.
+func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.width = msg.Width
+		m.height = msg.Height
+	case tea.KeyPressMsg:
+		switch msg.String() {
+		case "ctrl+c", "q":
+			return m, tea.Quit
+		}
+	}
+
+	var cmd tea.Cmd
+	m.clob, cmd = m.clob.Update(msg)
+	return m, cmd
+}
+
+// View renders the UI based on the current model state.
+func (m mainModel) View() tea.View {
+	return tea.NewView(m.clob.View())
+}
+
 func main() {
-	p := tea.NewProgram(InitialModel(), tea.WithAltScreen())
+	p := tea.NewProgram(InitialModel())
 
 	if _, err := p.Run(); err != nil {
 		log.Fatalf("Alas, there's been an error: %v", err)
@@ -122,8 +149,8 @@ The `Vertical` orientation also supports an `Alignment`.  When this is set to `A
 You can set the width and height of the component by passing a `clob.ViewOptions` struct to the `ViewWithOptions` function.
 
 ```go
-func (m mainModel) View() string {
-	return m.clob.ViewWithOptions(clob.ViewOptions{Width: m.width / 2, Height: m.height / 2})
+func (m mainModel) View() tea.View {
+	return tea.NewView(m.clob.ViewWithOptions(clob.ViewOptions{Width: m.width / 2, Height: m.height / 2}))
 }
 ```
 
