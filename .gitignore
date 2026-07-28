@@ -1,0 +1,4 @@
+# Compiled binaries from `go build ./...` without -o (defaults to the
+# directory/module name).
+/chartea
+/_examples/_examples
