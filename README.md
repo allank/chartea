@@ -42,16 +42,18 @@ func InitialModel() mainModel {
 	m := mainModel{
 		clob: clob.New(),
 	}
-	m.clob.Asks = []clob.Order{
-		{Price: 100, Volume: 5},
-		{Price: 101, Volume: 10},
-		{Price: 102, Volume: 20},
-	}
-	m.clob.Bids = []clob.Order{
-		{Price: 99, Volume: 1},
-		{Price: 98, Volume: 20},
-		{Price: 97, Volume: 40},
-	}
+	m.clob.ApplySnapshot(
+		[]clob.Order{
+			{Price: 100, Volume: 5},
+			{Price: 101, Volume: 10},
+			{Price: 102, Volume: 20},
+		},
+		[]clob.Order{
+			{Price: 99, Volume: 1},
+			{Price: 98, Volume: 20},
+			{Price: 97, Volume: 40},
+		},
+	)
 
 	return m
 }
@@ -97,7 +99,9 @@ The example displays side-by-side order book views using horizontal orientation 
 
 ## The order book
 
-The `clob.Model` requires an `OrderBook`.  An `OrderBook` has two fields, `Bids` and `Asks`, each of which is a slice of `Order`.  Each `Order` has a `Price` and a `Volume`.  The `Bids` and `Asks` do not need to be sorted, this is done internally before displaying.
+**Breaking change:** prior versions exposed `Bids` and `Asks` as public fields on `OrderBook`. They are now unexported — populate the book via `ApplySnapshot`/`ApplyDelta` and read it via `Bids()`/`Asks()` (see [API Reference](#api-reference)).
+
+The `clob.Model` requires an `OrderBook`. Populate it by calling `ApplySnapshot(asks, bids []Order)` to replace the book's contents wholesale (an initial load, or a full snapshot from an exchange), or `ApplyDelta(asks, bids []Order)` to merge incremental updates (streaming L2 updates: a zero-volume level removes that price, otherwise it inserts or updates the level's volume). Each `Order` has a `Price` and a `Volume`. Both methods sort the book for you as part of applying the update — asks ascending by price, bids descending — so the book is always correctly ordered as soon as you've applied an update, not just at render time.
 
 ## Customization
 
@@ -201,9 +205,25 @@ Creates a new `clob.Model` with default styles.
 
 Renders the CLOB with the given options.
 
+### `(b *OrderBook) ApplySnapshot(asks, bids []Order)`
+
+Replaces the book's contents with the given levels. Zero-volume entries in the input are dropped, and both sides are sorted (asks ascending, bids descending) before replacing the prior contents.
+
+### `(b *OrderBook) ApplyDelta(asks, bids []Order)`
+
+Merges the given levels into the book by price: a level matching an existing price updates its volume, a zero-volume update removes that price level, and an update for an unmatched price with non-zero volume is inserted. Both sides are re-sorted after merging.
+
+### `(b *OrderBook) Bids() []Order`
+
+Returns the current bid levels, sorted descending by price.
+
+### `(b *OrderBook) Asks() []Order`
+
+Returns the current ask levels, sorted ascending by price.
+
 ### `clob.Model`
 
-*   `OrderBook`: The data for the order book.
+*   `OrderBook`: The order book data, embedded in `Model`. Populate it via `ApplySnapshot`/`ApplyDelta` and read it via `Bids()`/`Asks()` — see above.
 *   `Orientation`: The orientation of the order book (`Horizontal` or `Vertical`).
 *   `Alignment`: The alignment of the volume and price in `Vertical` orientation (`AlignLeft` or `AlignRight`).
 *   `Spacing`: The space between the bid and ask columns.
