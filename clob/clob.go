@@ -202,10 +202,6 @@ func (m *Model) ViewWithOptions(opts ViewOptions) string {
 
 	switch m.Orientation {
 	case Vertical:
-		// Sort the bids and asks before rendering.
-		m.sortBids(true)
-		m.sortAsks(true)
-
 		// Truncate the bids and asks if a height is specified.
 		// Account for the spread when using Vertical orientation
 		bids, asks := m.truncateOrders((opts.Height - 1) / 2)
@@ -230,10 +226,6 @@ func (m *Model) ViewWithOptions(opts ViewOptions) string {
 			bookPanel,
 		)
 	case Horizontal:
-		// Sort the bids and asks before rendering.
-		m.sortBids(true)
-		m.sortAsks(false)
-
 		// Truncate the bids and asks if a height is specified.
 		bids, asks := m.truncateOrders(opts.Height)
 
@@ -269,7 +261,7 @@ func (m *Model) renderSpread(width int) string {
 	if len(m.asks) == 0 || len(m.bids) == 0 {
 		return ""
 	}
-	bestAsk := m.asks[len(m.asks)-1].Price
+	bestAsk := m.asks[0].Price
 	bestBid := m.bids[0].Price
 	spread := bestAsk - bestBid
 	priceFormat := fmt.Sprintf("Spread: %%.%df", m.PricePrecision)
@@ -361,39 +353,45 @@ func (m *Model) renderVerticalAsks(orders []Order, width int, maxVolume float64)
 	return lipgloss.JoinVertical(lipgloss.Left, rows...)
 }
 
-// sortBids sorts the bids in descending order by price.
-func (m *Model) sortBids(desc bool) {
-	sortLevels(m.bids, desc)
-}
-
-// sortAsks sorts the asks in ascending order by price.
-func (m *Model) sortAsks(desc bool) {
-	sortLevels(m.asks, desc)
-}
-
-// truncateOrders truncates the bids and asks to the given height.
+// truncateOrders truncates the bids and asks to the given height and
+// returns them in display order for the current Orientation. Bids are
+// always best-first (descending); asks are best-first (ascending) for
+// Horizontal, matching the book's canonical order, or reversed for
+// Vertical, which displays the worst ask at the top and the best ask
+// at the bottom, nearest the spread.
 func (m *Model) truncateOrders(height int) ([]Order, []Order) {
 	bids := m.bids
 	asks := m.asks
 	if height > 0 {
-		switch m.Orientation {
-		case Vertical:
-			if len(bids) > height {
-				bids = bids[:height]
-			}
-			if len(asks) > height {
-				asks = asks[len(asks)-height:]
-			}
-		case Horizontal:
-			if len(bids) > height {
-				bids = bids[:height]
-			}
-			if len(asks) > height {
-				asks = asks[:height]
-			}
+		if len(bids) > height {
+			bids = bids[:height]
+		}
+		if len(asks) > height {
+			asks = asks[:height]
 		}
 	}
+	if m.Orientation == Vertical {
+		// Bids are stored best-first (descending), which already matches
+		// Vertical's "best bid at the top" convention. Asks are stored
+		// best-first (ascending), but Vertical wants the worst ask at the
+		// top and the best ask at the bottom, nearest the spread — so the
+		// kept subset is reversed for display. A copy is required here:
+		// asks still shares a backing array with the book's canonical
+		// slice, and reversing in place would corrupt that order for the
+		// next render.
+		asks = reverseOrders(asks)
+	}
 	return bids, asks
+}
+
+// reverseOrders returns a copy of orders in reverse order, leaving the
+// input slice (and any array it shares) untouched.
+func reverseOrders(orders []Order) []Order {
+	reversed := make([]Order, len(orders))
+	for i, o := range orders {
+		reversed[len(orders)-1-i] = o
+	}
+	return reversed
 }
 
 // calculateMaxVolume finds the maximum volume in the given orders.
