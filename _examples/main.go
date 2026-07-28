@@ -5,7 +5,6 @@ import (
 	"log"
 	"math"
 	"os"
-	"sort"
 	"strconv"
 
 	"github.com/allank/chartea/clob"
@@ -155,19 +154,11 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case wsOrderBookMsg:
 		if msg.IsSnapshot {
-			m.wclob.Asks = msg.Asks
-			m.wclob.Bids = msg.Bids
-			m.rclob.Asks = msg.Asks
-			m.rclob.Bids = msg.Bids
-			sort.Slice(m.wclob.Asks, func(i, j int) bool { return m.wclob.Asks[i].Price < m.wclob.Asks[j].Price })
-			sort.Slice(m.wclob.Bids, func(i, j int) bool { return m.wclob.Bids[i].Price > m.wclob.Bids[j].Price })
-			sort.Slice(m.rclob.Asks, func(i, j int) bool { return m.rclob.Asks[i].Price < m.rclob.Asks[j].Price })
-			sort.Slice(m.rclob.Bids, func(i, j int) bool { return m.rclob.Bids[i].Price > m.rclob.Bids[j].Price })
+			m.wclob.ApplySnapshot(msg.Asks, msg.Bids)
+			m.rclob.ApplySnapshot(msg.Asks, msg.Bids)
 		} else {
-			mergeOrderBook(&m.wclob.Asks, msg.Asks, false)
-			mergeOrderBook(&m.wclob.Bids, msg.Bids, true)
-			mergeOrderBook(&m.rclob.Asks, msg.Asks, false)
-			mergeOrderBook(&m.rclob.Bids, msg.Bids, true)
+			m.wclob.ApplyDelta(msg.Asks, msg.Bids)
+			m.rclob.ApplyDelta(msg.Asks, msg.Bids)
 		}
 		return m, nil
 	}
@@ -176,33 +167,6 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.rclob, cmd = m.rclob.Update(msg)
 	m.wclob, _ = m.wclob.Update(msg)
 	return m, cmd
-}
-
-// mergeOrderBook applies L2 order book updates which can replace or remove entries.
-func mergeOrderBook(book *[]clob.Order, updates []clob.Order, desc bool) {
-	for _, update := range updates {
-		found := false
-		for i, existing := range *book {
-			if existing.Price == update.Price {
-				if update.Volume == 0 {
-					*book = append((*book)[:i], (*book)[i+1:]...)
-				} else {
-					(*book)[i].Volume = update.Volume
-				}
-				found = true
-				break
-			}
-		}
-		if !found && update.Volume > 0 {
-			*book = append(*book, update)
-		}
-	}
-	sort.Slice(*book, func(i, j int) bool {
-		if desc {
-			return (*book)[i].Price > (*book)[j].Price
-		}
-		return (*book)[i].Price < (*book)[j].Price
-	})
 }
 
 // View renders the UI based on the current model state.
