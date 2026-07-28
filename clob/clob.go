@@ -209,10 +209,13 @@ func (m *Model) ViewWithOptions(opts ViewOptions) string {
 		// Find the maximum volume in the order book to scale the bars correctly.
 		maxVolume := m.calculateMaxVolume(bids, asks)
 
-		// Render the bid and ask sides of the book.
-		askView := m.renderVerticalAsks(asks, opts.Width, maxVolume)
+		// Render the bid and ask sides of the book. Vertical orientation
+		// renders both sides volume-first for AlignLeft, price-first for
+		// AlignRight.
+		volumeFirst := m.Alignment == AlignLeft
+		askView := m.renderSide(asks, m.StyleOnAsk, opts.Width, maxVolume, volumeFirst)
 		spreadView := m.renderSpread(opts.Width)
-		bidView := m.renderVerticalBids(bids, opts.Width, maxVolume)
+		bidView := m.renderSide(bids, m.StyleOnBid, opts.Width, maxVolume, volumeFirst)
 
 		bookPanel := lipgloss.JoinVertical(lipgloss.Left, askView, spreadView, bidView)
 		// bookPanel := lipgloss.JoinVertical(lipgloss.Left, askView)
@@ -234,9 +237,11 @@ func (m *Model) ViewWithOptions(opts ViewOptions) string {
 
 		// Find the maximum volume in the order book to scale the bars correctly.
 		maxVolume := m.calculateMaxVolume(bids, asks)
-		// Render the bid and ask sides of the book.
-		bidView := m.renderBids(bids, columnWidth, maxVolume)
-		askView := m.renderAsks(asks, columnWidth, maxVolume)
+		// Render the bid and ask sides of the book. Horizontal orientation
+		// always renders bids price-first, asks volume-first.
+		const bidsVolumeFirst, asksVolumeFirst = false, true
+		bidView := m.renderSide(bids, m.StyleOnBid, columnWidth, maxVolume, bidsVolumeFirst)
+		askView := m.renderSide(asks, m.StyleOnAsk, columnWidth, maxVolume, asksVolumeFirst)
 
 		// Create a spacer between the two columns.
 		spacer := lipgloss.NewStyle().Width(m.Spacing).Render("")
@@ -273,8 +278,24 @@ func (m *Model) renderSpread(width int) string {
 	return lipgloss.NewStyle().Width(width).Align(align).Render(m.StyleOffBar.Render(spreadString))
 }
 
-// renderVerticalBids renders the bid side of the order book for vertical orientation.
-func (m *Model) renderVerticalBids(orders []Order, width int, maxVolume float64) string {
+// renderSide renders one side of the order book (a column of price/volume
+// rows) using onStyle for the filled portion of each row's volume bar.
+//
+// Every row reduces to one of two shapes, chosen by volumeFirst:
+//   - volume-first: "volume  price", bar filled from the left (on-segment
+//     first), joined left.
+//   - price-first: "price  volume", bar filled from the right (off-segment
+//     first), joined right.
+//
+// Horizontal orientation always renders bids price-first and asks
+// volume-first; Vertical orientation renders both sides volume-first for
+// AlignLeft and price-first for AlignRight. This is the single
+// implementation behind what were previously four near-identical
+// functions — renderVerticalAsks's AlignRight-equivalent path used to skip
+// the .Width() calls the other three carried, leaving its bar segments
+// unconstrained; that inconsistency can't recur now that there's only one
+// code path.
+func (m *Model) renderSide(orders []Order, onStyle lipgloss.Style, width int, maxVolume float64, volumeFirst bool) string {
 	rows := make([]string, 0, len(orders))
 	priceFormat := fmt.Sprintf("%%.%df", m.PricePrecision)
 	volumeFormat := fmt.Sprintf("%%.%df", m.VolumePrecision)
@@ -289,7 +310,7 @@ func (m *Model) renderVerticalBids(orders []Order, width int, maxVolume float64)
 		}
 
 		var output string
-		if m.Alignment == AlignLeft {
+		if volumeFirst {
 			output = fmt.Sprintf("%s%s%s", volumeString, strings.Repeat(" ", padding), priceString)
 		} else {
 			output = fmt.Sprintf("%s%s%s", priceString, strings.Repeat(" ", padding), volumeString)
@@ -299,53 +320,13 @@ func (m *Model) renderVerticalBids(orders []Order, width int, maxVolume float64)
 		offLen := width - onLen
 
 		var bar string
-		if m.Alignment == AlignLeft {
-			onStr := m.StyleOnBid.Width(onLen).Render(output[:onLen])
+		if volumeFirst {
+			onStr := onStyle.Width(onLen).Render(output[:onLen])
 			offStr := m.StyleOffBar.Width(offLen).Render(output[onLen:])
 			bar = lipgloss.JoinHorizontal(lipgloss.Left, onStr, offStr)
 		} else {
 			offStr := m.StyleOffBar.Width(offLen).Render(output[:offLen])
-			onStr := m.StyleOnBid.Width(onLen).Render(output[offLen:])
-			bar = lipgloss.JoinHorizontal(lipgloss.Right, offStr, onStr)
-		}
-		rows = append(rows, bar)
-	}
-	return lipgloss.JoinVertical(lipgloss.Left, rows...)
-}
-
-// renderVerticalAsks renders the ask side of the order book for vertical orientation.
-func (m *Model) renderVerticalAsks(orders []Order, width int, maxVolume float64) string {
-	rows := make([]string, 0, len(orders))
-	priceFormat := fmt.Sprintf("%%.%df", m.PricePrecision)
-	volumeFormat := fmt.Sprintf("%%.%df", m.VolumePrecision)
-
-	for _, o := range orders {
-		priceString := fmt.Sprintf(priceFormat, o.Price)
-		volumeString := fmt.Sprintf(volumeFormat, o.Volume)
-
-		padding := width - len(priceString) - len(volumeString)
-		if padding < 0 {
-			padding = 0
-		}
-
-		var output string
-		if m.Alignment == AlignLeft {
-			output = fmt.Sprintf("%s%s%s", volumeString, strings.Repeat(" ", padding), priceString)
-		} else {
-			output = fmt.Sprintf("%s%s%s", priceString, strings.Repeat(" ", padding), volumeString)
-		}
-
-		onLen := int(float64(width) * (o.Volume / maxVolume))
-		offLen := width - onLen
-
-		var bar string
-		if m.Alignment == AlignLeft {
-			onStr := m.StyleOnAsk.Width(onLen).Render(output[:onLen])
-			offStr := m.StyleOffBar.Width(offLen).Render(output[onLen:])
-			bar = lipgloss.JoinHorizontal(lipgloss.Left, onStr, offStr)
-		} else {
-			offStr := m.StyleOffBar.Render(output[:offLen])
-			onStr := m.StyleOnAsk.Render(output[offLen:])
+			onStr := onStyle.Width(onLen).Render(output[offLen:])
 			bar = lipgloss.JoinHorizontal(lipgloss.Right, offStr, onStr)
 		}
 		rows = append(rows, bar)
@@ -408,60 +389,4 @@ func (m *Model) calculateMaxVolume(bids, asks []Order) float64 {
 		}
 	}
 	return maxVolume
-}
-
-// renderBids renders the bid side of the order book.
-func (m *Model) renderBids(orders []Order, width int, maxVolume float64) string {
-	rows := make([]string, 0, len(orders))
-	priceFormat := fmt.Sprintf("%%.%df", m.PricePrecision)
-	volumeFormat := fmt.Sprintf("%%.%df", m.VolumePrecision)
-
-	for _, o := range orders {
-		priceString := fmt.Sprintf(priceFormat, o.Price)
-		volumeString := fmt.Sprintf(volumeFormat, o.Volume)
-
-		padding := width - len(priceString) - len(volumeString)
-		if padding < 0 {
-			padding = 0
-		}
-		output := fmt.Sprintf("%s%s%s", priceString, strings.Repeat(" ", padding), volumeString)
-
-		onLen := int(float64(width) * (o.Volume / maxVolume))
-		offLen := width - onLen
-
-		offStr := m.StyleOffBar.Width(offLen).Render(output[:offLen])
-		onStr := m.StyleOnBid.Width(onLen).Render(output[offLen:])
-
-		bar := lipgloss.JoinHorizontal(lipgloss.Right, offStr, onStr)
-		rows = append(rows, bar)
-	}
-	return lipgloss.JoinVertical(lipgloss.Left, rows...)
-}
-
-// renderAsks renders the ask side of the order book.
-func (m *Model) renderAsks(orders []Order, width int, maxVolume float64) string {
-	rows := make([]string, 0, len(orders))
-	priceFormat := fmt.Sprintf("%%.%df", m.PricePrecision)
-	volumeFormat := fmt.Sprintf("%%.%df", m.VolumePrecision)
-
-	for _, o := range orders {
-		priceString := fmt.Sprintf(priceFormat, o.Price)
-		volumeString := fmt.Sprintf(volumeFormat, o.Volume)
-
-		padding := width - len(priceString) - len(volumeString)
-		if padding < 0 {
-			padding = 0
-		}
-		output := fmt.Sprintf("%s%s%s", volumeString, strings.Repeat(" ", padding), priceString)
-
-		onLen := int(float64(width) * (o.Volume / maxVolume))
-		offLen := width - onLen
-
-		onStr := m.StyleOnAsk.Width(onLen).Render(output[:onLen])
-		offStr := m.StyleOffBar.Width(offLen).Render(output[onLen:])
-
-		bar := lipgloss.JoinHorizontal(lipgloss.Left, onStr, offStr)
-		rows = append(rows, bar)
-	}
-	return lipgloss.JoinVertical(lipgloss.Left, rows...)
 }

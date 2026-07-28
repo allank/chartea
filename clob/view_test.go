@@ -71,6 +71,26 @@ func TestViewWithOptionsVerticalOrdering(t *testing.T) {
 	assertBefore(t, out, "Spread: 5.00", "95.00")
 }
 
+func TestViewWithOptionsVerticalAlignRightOrdering(t *testing.T) {
+	m := clob.New()
+	m.Orientation = clob.Vertical
+	m.Alignment = clob.AlignRight
+	m.ApplySnapshot(
+		[]clob.Order{{Price: 100.0, Volume: 1.0}, {Price: 105.0, Volume: 1.0}, {Price: 110.0, Volume: 1.0}},
+		[]clob.Order{{Price: 90.0, Volume: 1.0}, {Price: 92.0, Volume: 1.0}, {Price: 95.0, Volume: 1.0}},
+	)
+
+	out := m.ViewWithOptions(clob.ViewOptions{Width: 40, Height: 20})
+
+	// Row ordering is governed by truncateOrders, not Alignment, so it
+	// matches the AlignLeft case: worst-to-best asks top-to-bottom,
+	// best-to-worst bids.
+	assertBefore(t, out, "110.00", "105.00")
+	assertBefore(t, out, "105.00", "100.00")
+	assertBefore(t, out, "95.00", "92.00")
+	assertBefore(t, out, "92.00", "90.00")
+}
+
 // assertBefore fails if first does not appear in out, or appears after last.
 func assertBefore(t *testing.T, out, first, last string) {
 	t.Helper()
