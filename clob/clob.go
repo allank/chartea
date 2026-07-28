@@ -68,14 +68,90 @@ type Model struct {
 
 // OrderBook represents the full order book.
 type OrderBook struct {
-	Bids []Order
-	Asks []Order
+	bids []Order
+	asks []Order
 }
 
 // Order represents a single order in the book.
 type Order struct {
 	Volume float64
 	Price  float64
+}
+
+// Bids returns the current bid levels, sorted descending by price.
+func (b *OrderBook) Bids() []Order {
+	return b.bids
+}
+
+// Asks returns the current ask levels, sorted ascending by price.
+func (b *OrderBook) Asks() []Order {
+	return b.asks
+}
+
+// ApplySnapshot replaces the book's contents with the given levels. Zero-volume
+// entries in the input are dropped, and both sides are sorted (asks ascending,
+// bids descending) before replacing the prior contents.
+func (b *OrderBook) ApplySnapshot(asks, bids []Order) {
+	b.asks = normalizeLevels(asks, false)
+	b.bids = normalizeLevels(bids, true)
+}
+
+// ApplyDelta merges the given levels into the book by price: a level matching
+// an existing price updates its volume, a zero-volume update removes that
+// price level, and an update for an unmatched price with non-zero volume is
+// inserted. Both sides are re-sorted after merging (asks ascending, bids
+// descending).
+func (b *OrderBook) ApplyDelta(asks, bids []Order) {
+	b.asks = mergeLevels(b.asks, asks, false)
+	b.bids = mergeLevels(b.bids, bids, true)
+}
+
+// mergeLevels merges updates into an existing set of price levels and sorts
+// the result (descending by price when desc is true, ascending otherwise).
+func mergeLevels(levels, updates []Order, desc bool) []Order {
+	for _, update := range updates {
+		found := false
+		for i, existing := range levels {
+			if existing.Price == update.Price {
+				if update.Volume == 0 {
+					levels = append(levels[:i], levels[i+1:]...)
+				} else {
+					levels[i].Volume = update.Volume
+				}
+				found = true
+				break
+			}
+		}
+		if !found && update.Volume != 0 {
+			levels = append(levels, update)
+		}
+	}
+	sortLevels(levels, desc)
+	return levels
+}
+
+// normalizeLevels drops zero-volume entries and sorts the remaining levels
+// (descending by price when desc is true, ascending otherwise).
+func normalizeLevels(levels []Order, desc bool) []Order {
+	normalized := make([]Order, 0, len(levels))
+	for _, o := range levels {
+		if o.Volume != 0 {
+			normalized = append(normalized, o)
+		}
+	}
+	sortLevels(normalized, desc)
+	return normalized
+}
+
+// sortLevels sorts levels by price (descending when desc is true, ascending
+// otherwise).
+func sortLevels(levels []Order, desc bool) {
+	sort.Slice(levels, func(i, j int) bool {
+		if desc {
+			return levels[i].Price > levels[j].Price
+		}
+		return levels[i].Price < levels[j].Price
+	})
 }
 
 // New creates a new CLOB model with default styles.
@@ -190,11 +266,11 @@ func (m *Model) ViewWithOptions(opts ViewOptions) string {
 
 // renderSpread renders the spread between the best bid and ask.
 func (m *Model) renderSpread(width int) string {
-	if len(m.Asks) == 0 || len(m.Bids) == 0 {
+	if len(m.asks) == 0 || len(m.bids) == 0 {
 		return ""
 	}
-	bestAsk := m.Asks[len(m.Asks)-1].Price
-	bestBid := m.Bids[0].Price
+	bestAsk := m.asks[len(m.asks)-1].Price
+	bestBid := m.bids[0].Price
 	spread := bestAsk - bestBid
 	priceFormat := fmt.Sprintf("Spread: %%.%df", m.PricePrecision)
 	spreadString := fmt.Sprintf(priceFormat, spread)
@@ -287,28 +363,18 @@ func (m *Model) renderVerticalAsks(orders []Order, width int, maxVolume float64)
 
 // sortBids sorts the bids in descending order by price.
 func (m *Model) sortBids(desc bool) {
-	sort.Slice(m.Bids, func(i, j int) bool {
-		if desc {
-			return m.Bids[i].Price > m.Bids[j].Price
-		}
-		return m.Bids[i].Price < m.Bids[j].Price
-	})
+	sortLevels(m.bids, desc)
 }
 
 // sortAsks sorts the asks in ascending order by price.
 func (m *Model) sortAsks(desc bool) {
-	sort.Slice(m.Asks, func(i, j int) bool {
-		if desc {
-			return m.Asks[i].Price > m.Asks[j].Price
-		}
-		return m.Asks[i].Price < m.Asks[j].Price
-	})
+	sortLevels(m.asks, desc)
 }
 
 // truncateOrders truncates the bids and asks to the given height.
 func (m *Model) truncateOrders(height int) ([]Order, []Order) {
-	bids := m.Bids
-	asks := m.Asks
+	bids := m.bids
+	asks := m.asks
 	if height > 0 {
 		switch m.Orientation {
 		case Vertical:
