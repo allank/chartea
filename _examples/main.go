@@ -151,10 +151,8 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case wsOrderBookMsg:
 		if msg.IsSnapshot {
 			m.wclob.ApplySnapshot(msg.Asks, msg.Bids)
-			m.rclob.ApplySnapshot(msg.Asks, msg.Bids)
 		} else {
 			m.wclob.ApplyDelta(msg.Asks, msg.Bids)
-			m.rclob.ApplyDelta(msg.Asks, msg.Bids)
 		}
 		return m, nil
 	}
