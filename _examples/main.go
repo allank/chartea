@@ -76,11 +76,9 @@ func InitialModel() mainModel {
 			log.Fatalf("could not fetch order book: %v", err)
 		}
 		asks, bids := parseOrderBook(orderBook)
-		m.rclob.Asks = asks
-		m.rclob.Bids = bids
+		m.rclob.ApplySnapshot(asks, bids)
 	} else {
-		m.rclob.Asks = mockAsks()
-		m.rclob.Bids = mockBids()
+		m.rclob.ApplySnapshot(mockAsks(), mockBids())
 	}
 	// Set VolumePrecision
 	m.rclob.VolumePrecision = 8
@@ -91,8 +89,7 @@ func InitialModel() mainModel {
 	m.rclob.StyleOnAsk = lipgloss.NewStyle().
 		Foreground(lipgloss.Color("228")).
 		Background(lipgloss.Color("197"))
-	m.wclob.Asks = mockAsks()
-	m.wclob.Bids = mockBids()
+	m.wclob.ApplySnapshot(mockAsks(), mockBids())
 	// Set VolumePrecision
 	m.wclob.VolumePrecision = 8
 	m.wclob.Orientation = clob.Vertical
@@ -147,8 +144,7 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				// Handle error appropriately, maybe set an error message in the model
 			} else {
 				asks, bids := parseOrderBook(orderBook)
-				m.rclob.Asks = asks
-				m.rclob.Bids = bids
+				m.rclob.ApplySnapshot(asks, bids)
 			}
 		}
 		return m, nil
