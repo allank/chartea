@@ -34,6 +34,19 @@ const (
 	AlignRight
 )
 
+// Side determines which portion of the order book ViewWithOptions renders.
+type Side int
+
+const (
+	// Both renders bids and asks together. This is the zero value, so an
+	// unset Sides field preserves prior behavior.
+	Both Side = iota
+	// BidsOnly renders only the bid side, using the full available space.
+	BidsOnly
+	// AsksOnly renders only the ask side, using the full available space.
+	AsksOnly
+)
+
 // ViewOptions allows you to specify the dimensions of the CLOB view.
 type ViewOptions struct {
 	Width  int
@@ -53,6 +66,10 @@ type Model struct {
 
 	// Alignment determines, for a vertical layout, whether the volume bar is aligned to the left or right.
 	Alignment Alignment
+
+	// Sides determines whether ViewWithOptions renders both sides, bids
+	// only, or asks only. The zero value is Both.
+	Sides Side
 
 	// Spacing is the space between the bid and ask columns.
 	Spacing int
@@ -268,44 +285,62 @@ func (m *Model) ViewWithOptions(opts ViewOptions) string {
 
 	switch m.Orientation {
 	case Vertical:
-		// Truncate the bids and asks if a height is specified.
-		// Account for the spread when using Vertical orientation
+		// Vertical orientation renders both sides volume-first for
+		// AlignLeft, price-first for AlignRight — for either side alone or
+		// both together.
+		volumeFirst := m.Alignment == AlignLeft
+
+		switch m.Sides {
+		case BidsOnly:
+			// A single side gets the full height: there's no spread row to
+			// reserve a line for when the other side isn't shown.
+			bids, _ := m.truncateOrders(opts.Height)
+			maxVolume := m.calculateMaxVolume(bids, nil)
+			bidView := m.renderSide(bids, m.StyleOnBid, opts.Width, maxVolume, volumeFirst)
+			return place(opts, bidView)
+		case AsksOnly:
+			_, asks := m.truncateOrders(opts.Height)
+			maxVolume := m.calculateMaxVolume(nil, asks)
+			askView := m.renderSide(asks, m.StyleOnAsk, opts.Width, maxVolume, volumeFirst)
+			return place(opts, askView)
+		}
+
+		// Both: truncate the bids and asks, accounting for the spread row.
 		bids, asks := m.truncateOrders((opts.Height - 1) / 2)
 
 		// Find the maximum volume in the order book to scale the bars correctly.
 		maxVolume := m.calculateMaxVolume(bids, asks)
 
-		// Render the bid and ask sides of the book. Vertical orientation
-		// renders both sides volume-first for AlignLeft, price-first for
-		// AlignRight.
-		volumeFirst := m.Alignment == AlignLeft
 		askView := m.renderSide(asks, m.StyleOnAsk, opts.Width, maxVolume, volumeFirst)
 		spreadView := m.renderSpread(opts.Width)
 		bidView := m.renderSide(bids, m.StyleOnBid, opts.Width, maxVolume, volumeFirst)
 
 		bookPanel := lipgloss.JoinVertical(lipgloss.Left, askView, spreadView, bidView)
-		// bookPanel := lipgloss.JoinVertical(lipgloss.Left, askView)
-
-		// Place the book panel in the center of the available space.
-		return lipgloss.Place(
-			opts.Width,
-			opts.Height,
-			lipgloss.Center,
-			lipgloss.Center,
-			bookPanel,
-		)
+		return place(opts, bookPanel)
 	case Horizontal:
-		// Truncate the bids and asks if a height is specified.
+		// Truncate the bids and asks if a height is specified. Horizontal
+		// orientation always renders bids price-first, asks volume-first —
+		// for either side alone or both together.
 		bids, asks := m.truncateOrders(opts.Height)
+		const bidsVolumeFirst, asksVolumeFirst = false, true
 
-		// Calculate the width of each column.
+		switch m.Sides {
+		case BidsOnly:
+			// A single side gets the full width: no spacer, no second column.
+			maxVolume := m.calculateMaxVolume(bids, nil)
+			bidView := m.renderSide(bids, m.StyleOnBid, opts.Width, maxVolume, bidsVolumeFirst)
+			return place(opts, bidView)
+		case AsksOnly:
+			maxVolume := m.calculateMaxVolume(nil, asks)
+			askView := m.renderSide(asks, m.StyleOnAsk, opts.Width, maxVolume, asksVolumeFirst)
+			return place(opts, askView)
+		}
+
+		// Both: calculate the width of each column.
 		columnWidth := (opts.Width - m.Spacing) / 2
 
 		// Find the maximum volume in the order book to scale the bars correctly.
 		maxVolume := m.calculateMaxVolume(bids, asks)
-		// Render the bid and ask sides of the book. Horizontal orientation
-		// always renders bids price-first, asks volume-first.
-		const bidsVolumeFirst, asksVolumeFirst = false, true
 		bidView := m.renderSide(bids, m.StyleOnBid, columnWidth, maxVolume, bidsVolumeFirst)
 		askView := m.renderSide(asks, m.StyleOnAsk, columnWidth, maxVolume, asksVolumeFirst)
 
@@ -314,17 +349,20 @@ func (m *Model) ViewWithOptions(opts ViewOptions) string {
 
 		// Join the bid, spacer, and ask views horizontally.
 		bookPanel := lipgloss.JoinHorizontal(lipgloss.Top, bidView, spacer, askView)
-
-		// Place the book panel in the center of the available space.
-		return lipgloss.Place(
-			opts.Width,
-			opts.Height,
-			lipgloss.Center,
-			lipgloss.Center,
-			bookPanel,
-		)
+		return place(opts, bookPanel)
 	}
 	return ""
+}
+
+// place centers a rendered book panel within the given dimensions.
+func place(opts ViewOptions, panel string) string {
+	return lipgloss.Place(
+		opts.Width,
+		opts.Height,
+		lipgloss.Center,
+		lipgloss.Center,
+		panel,
+	)
 }
 
 // renderSpread renders the spread between the best bid and ask.
