@@ -2,6 +2,7 @@ package clob
 
 import (
 	"fmt"
+	"math"
 	"sort"
 	"strings"
 
@@ -104,6 +105,71 @@ func (b *OrderBook) ApplySnapshot(asks, bids []Order) {
 func (b *OrderBook) ApplyDelta(asks, bids []Order) {
 	b.asks = mergeLevels(b.asks, asks, false)
 	b.bids = mergeLevels(b.bids, bids, true)
+}
+
+// GroupedBids returns the current bids aggregated into price Buckets of the
+// given increment, rounded down, with volume summed within each Bucket.
+// increment <= 0 returns the current bids unchanged. This is a pure read:
+// it does not mutate the book, so Bids() always retains full granularity.
+func (b *OrderBook) GroupedBids(increment float64) []Order {
+	return groupLevels(b.bids, increment, false)
+}
+
+// GroupedAsks returns the current asks aggregated into price Buckets of the
+// given increment, rounded up, with volume summed within each Bucket.
+// increment <= 0 returns the current asks unchanged. This is a pure read:
+// it does not mutate the book, so Asks() always retains full granularity.
+func (b *OrderBook) GroupedAsks(increment float64) []Order {
+	return groupLevels(b.asks, increment, true)
+}
+
+// groupLevels aggregates already-sorted levels into price buckets of the
+// given increment (rounded up when roundUp is true, down otherwise),
+// summing volume within each bucket. Bucket identity is computed as an
+// integer index rather than by comparing bucketed float prices directly,
+// avoiding floating-point round-trip drift that could otherwise split one
+// bucket into two. Because levels are already sorted and floor/ceil are
+// monotonic, equal buckets are always adjacent, so a single forward pass
+// with no map is sufficient.
+func groupLevels(levels []Order, increment float64, roundUp bool) []Order {
+	if increment <= 0 || len(levels) == 0 {
+		return levels
+	}
+	grouped := make([]Order, 0, len(levels))
+	var lastBucket int64
+	for i, o := range levels {
+		bucket := bucketIndex(o.Price, increment, roundUp)
+		if i > 0 && bucket == lastBucket {
+			grouped[len(grouped)-1].Volume += o.Volume
+		} else {
+			grouped = append(grouped, Order{Price: bucketPrice(bucket, increment), Volume: o.Volume})
+			lastBucket = bucket
+		}
+	}
+	return grouped
+}
+
+// bucketIndex returns the integer bucket a price falls into for the given
+// increment (rounded up when roundUp is true, down otherwise).
+func bucketIndex(price, increment float64, roundUp bool) int64 {
+	if roundUp {
+		return int64(math.Ceil(price / increment))
+	}
+	return int64(math.Floor(price / increment))
+}
+
+// bucketPrice converts a bucket index back into a price. float64(bucket) *
+// increment can carry trailing float64 noise for increments that aren't
+// exactly representable in binary (e.g. 0.0001). Rounding to a fixed
+// number of decimal places would remove that noise but risks colliding
+// two genuinely distinct buckets onto the same displayed price for
+// increments finer than that fixed precision — so the rounding unit
+// instead scales with increment itself, staying far finer than the gap
+// between adjacent buckets (always exactly one increment apart) while
+// still coarse enough to absorb the multiplication's float64 noise.
+func bucketPrice(bucket int64, increment float64) float64 {
+	unit := increment / 1e6
+	return math.Round(float64(bucket)*increment/unit) * unit
 }
 
 // mergeLevels merges updates into an existing set of price levels and sorts
