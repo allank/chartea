@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-07-29
+
+Non-breaking: adds new API, no existing public API removed or changed.
+
+### Added
+
+- `OrderBook.GroupedBids(increment)` / `GroupedAsks(increment)` aggregate the book into price Buckets of a given Increment — bids rounded down, asks rounded up, volumes summed within each Bucket. See [README: Grouping](README.md#grouping).
+- `Model.Sides` (`Side`: `Both`/`BidsOnly`/`AsksOnly`) renders only bids, only asks, or both. The default (`Both`) is unchanged from prior behavior. See [README: Sides](README.md#sides).
+
+### Fixed
+
+- The example's Static Panel no longer receives Realtime Mode WebSocket updates, matching `CONTEXT.md`'s definition of Static Mode (REST fetch on startup or manual refresh only).
+- The README's Usage and Dimensions examples now use the Bubble Tea v2 API (`charm.land/bubbletea/v2`) this module actually depends on, rather than an outdated v1-style API that didn't compile.
+
 ## [0.1.0] - 2026-07-28
 
 First tagged release.
