@@ -148,6 +148,14 @@ When `Vertical`, the bids and asks will be displayed stacked, asks on the top, b
 
 The `Vertical` orientation also supports an `Alignment`.  When this is set to `AlignLeft` (default), the volume and coloured volume bar are shown on the left, with price on the right.  When this is set to `AlignRight`, the volume and coloured volume bar are shown on the right, with price on the left.
 
+### Sides
+
+You can choose which Side of the order book is displayed by setting `Sides` on the `clob.Model` to `Both` (default), `BidsOnly`, or `AsksOnly`.
+
+When `Both`, bids and asks are shown together, exactly as described under [Orientation](#orientation) above.
+
+When `BidsOnly` or `AsksOnly`, only that side is displayed, and it's given the full available space rather than sharing it with the other side: the full width in `Horizontal` orientation (no gap where the other column would have been), or the full height in `Vertical` orientation. In `Vertical` orientation, the spread line is also omitted for a single side, since it needs both a best bid and a best ask to show.
+
 ### Dimensions
 
 You can set the width and height of the component by passing a `clob.ViewOptions` struct to the `ViewWithOptions` function.
@@ -265,6 +273,7 @@ Returns the current asks aggregated into price Buckets of the given increment, r
 *   `OrderBook`: The order book data, embedded in `Model`. Populate it via `ApplySnapshot`/`ApplyDelta` and read it via `Bids()`/`Asks()` — see above.
 *   `Orientation`: The orientation of the order book (`Horizontal` or `Vertical`).
 *   `Alignment`: The alignment of the volume and price in `Vertical` orientation (`AlignLeft` or `AlignRight`).
+*   `Sides`: Which Side of the order book is displayed (`Both`, `BidsOnly`, or `AsksOnly`).
 *   `Spacing`: The space between the bid and ask columns.
 *   `PricePrecision`: The number of decimal places for the price.
 *   `VolumePrecision`: The number of decimal places for the volume.
