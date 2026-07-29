@@ -130,6 +130,10 @@ The example displays side-by-side order book views using horizontal orientation 
 
 The `clob.Model` requires an `OrderBook`. Populate it by calling `ApplySnapshot(asks, bids []Order)` to replace the book's contents wholesale (an initial load, or a full snapshot from an exchange), or `ApplyDelta(asks, bids []Order)` to merge incremental updates (streaming L2 updates: a zero-volume level removes that price, otherwise it inserts or updates the level's volume). Each `Order` has a `Price` and a `Volume`. Both methods sort the book for you as part of applying the update — asks ascending by price, bids descending — so the book is always correctly ordered as soon as you've applied an update, not just at render time.
 
+### Grouping
+
+You can view the book at a coarser price resolution by calling `GroupedBids(increment)`/`GroupedAsks(increment)`, which aggregate the raw Orders into price Buckets of the given Increment. Bids round down to the nearest Increment, asks round up, and the volumes of every Order that lands in the same Bucket are summed — so grouping never loses volume, only price resolution. An Increment of zero (or negative) returns the book unchanged — every raw Order, ungrouped. Grouping is a pure read: it doesn't modify the `OrderBook`, so `Bids()`/`Asks()` always retain full granularity and you can re-group at a different Increment at any time.
+
 ## Customization
 
 You can customize the appearance and behavior of the `clob` component by setting the fields on the `clob.Model`.
@@ -247,6 +251,14 @@ Returns the current bid levels, sorted descending by price.
 ### `(b *OrderBook) Asks() []Order`
 
 Returns the current ask levels, sorted ascending by price.
+
+### `(b *OrderBook) GroupedBids(increment float64) []Order`
+
+Returns the current bids aggregated into price Buckets of the given increment, rounded down, with volume summed within each Bucket. `increment <= 0` returns the current bids unchanged.
+
+### `(b *OrderBook) GroupedAsks(increment float64) []Order`
+
+Returns the current asks aggregated into price Buckets of the given increment, rounded up, with volume summed within each Bucket. `increment <= 0` returns the current asks unchanged.
 
 ### `clob.Model`
 
