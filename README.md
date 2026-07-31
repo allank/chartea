@@ -234,6 +234,28 @@ func InitialModel() mainModel {
 }
 ```
 
+### Volume formatting
+
+By default, volume is rendered with `VolumePrecision` decimal places. To use a different format — for example, abbreviating large volumes with [go-humanize](https://github.com/dustin/go-humanize) — set `VolumeFormatter` on the `clob.Model`. When set, it takes over volume formatting entirely and `VolumePrecision` is ignored.
+
+```go
+import "github.com/dustin/go-humanize"
+
+func InitialModel() mainModel {
+	m := mainModel{
+		clob: clob.New(),
+	}
+
+	m.clob.VolumeFormatter = func(v float64) string {
+		return humanize.SIWithDigits(v, 1, "")
+	}
+
+	// ... (rest of your model initialization)
+
+	return m
+}
+```
+
 ## API Reference
 
 ### `clob.New()`
@@ -277,6 +299,7 @@ Returns the current asks aggregated into price Buckets of the given increment, r
 *   `Spacing`: The space between the bid and ask columns.
 *   `PricePrecision`: The number of decimal places for the price.
 *   `VolumePrecision`: The number of decimal places for the volume.
+*   `VolumeFormatter`: An optional `func(float64) string` that overrides volume formatting entirely (takes precedence over `VolumePrecision`).
 *   `StyleOffBar`: The style for the "off" part of the volume bar.
 *   `StyleOnBid`: The style for the bid volume bar.
 *   `StyleOnAsk`: The style for the ask volume bar.

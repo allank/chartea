@@ -50,3 +50,21 @@ func TestRenderSideWrapsOverflowingContent(t *testing.T) {
 		})
 	}
 }
+
+// TestRenderSideUsesVolumeFormatter verifies that a non-nil VolumeFormatter
+// overrides VolumePrecision-based formatting entirely.
+func TestRenderSideUsesVolumeFormatter(t *testing.T) {
+	m := New()
+	m.VolumePrecision = 2
+	m.VolumeFormatter = func(v float64) string { return "many" }
+	orders := []Order{{Price: 100, Volume: 1234.5}}
+
+	out := m.renderSide(orders, m.StyleOnAsk, 20, 1234.5, true)
+
+	if !strings.Contains(out, "many") {
+		t.Errorf("expected VolumeFormatter output %q in rendered row, got:\n%q", "many", out)
+	}
+	if strings.Contains(out, "1234.50") {
+		t.Errorf("expected VolumeFormatter to override VolumePrecision formatting, but found the default-formatted volume in:\n%q", out)
+	}
+}

@@ -78,6 +78,12 @@ type Model struct {
 	PricePrecision  int
 	VolumePrecision int
 
+	// VolumeFormatter, if set, formats volume values for display instead of
+	// the default "%.<VolumePrecision>f" formatting. This lets callers plug
+	// in their own formatting (e.g. github.com/dustin/go-humanize) without
+	// chartea depending on it directly.
+	VolumeFormatter func(float64) string
+
 	// Styles
 	StyleOffBar lipgloss.Style
 	StyleOnBid  lipgloss.Style
@@ -407,6 +413,9 @@ func (m *Model) renderSide(orders []Order, onStyle lipgloss.Style, width int, ma
 	for _, o := range orders {
 		priceString := fmt.Sprintf(priceFormat, o.Price)
 		volumeString := fmt.Sprintf(volumeFormat, o.Volume)
+		if m.VolumeFormatter != nil {
+			volumeString = m.VolumeFormatter(o.Volume)
+		}
 
 		padding := width - len(priceString) - len(volumeString)
 		if padding < 0 {
